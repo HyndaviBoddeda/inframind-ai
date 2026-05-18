@@ -21,7 +21,6 @@ def format_incident(incident: Incident):
 
 @router.post("/analyze-log")
 def analyze(request: LogRequest, db: Session = Depends(get_db)):
-
     result = analyze_log(request.log_text)
 
     incident = Incident(
@@ -52,15 +51,11 @@ def get_incidents(
     query = db.query(Incident)
 
     if severity:
-        query = query.filter(
-            Incident.severity == severity
-        )
+        query = query.filter(Incident.severity == severity)
 
     if incident_type:
         query = query.filter(
-            Incident.incident_type.contains(
-                incident_type
-            )
+            Incident.incident_type.contains(incident_type)
         )
 
     incidents = query.limit(limit).all()
@@ -126,4 +121,38 @@ def update_incident_status(
     return {
         "message": "Incident status updated",
         "incident": format_incident(incident)
+    }
+
+
+@router.get("/metrics")
+def get_metrics(db: Session = Depends(get_db)):
+    incidents = db.query(Incident).all()
+
+    return {
+        "total_incidents": len(incidents),
+        "severity_counts": {
+            "critical": len(
+                [i for i in incidents if i.severity == "critical"]
+            ),
+            "high": len(
+                [i for i in incidents if i.severity == "high"]
+            ),
+            "medium": len(
+                [i for i in incidents if i.severity == "medium"]
+            ),
+            "low": len(
+                [i for i in incidents if i.severity == "low"]
+            )
+        },
+        "status_counts": {
+            "open": len(
+                [i for i in incidents if i.status == "open"]
+            ),
+            "investigating": len(
+                [i for i in incidents if i.status == "investigating"]
+            ),
+            "resolved": len(
+                [i for i in incidents if i.status == "resolved"]
+            )
+        }
     }
