@@ -31,6 +31,8 @@ function App() {
   const [searchText, setSearchText] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [newLog, setNewLog] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const loadDashboardData = () => {
     fetch("http://127.0.0.1:8000/metrics")
@@ -45,6 +47,31 @@ function App() {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const analyzeNewLog = () => {
+    if (!newLog.trim()) {
+      alert("Please enter a log before analyzing.");
+      return;
+    }
+
+    setIsAnalyzing(true);
+
+    fetch("http://127.0.0.1:8000/analyze-log", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        log_text: newLog
+      })
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setNewLog("");
+        loadDashboardData();
+      })
+      .finally(() => setIsAnalyzing(false));
+  };
 
   const resolveIncident = (incidentId) => {
     fetch(
@@ -92,6 +119,32 @@ function App() {
   return (
     <div style={{ padding: "30px", fontFamily: "Arial" }}>
       <h1>🚨 InfraMind AI Dashboard</h1>
+
+      <div
+        style={{
+          border: "1px solid gray",
+          padding: "20px",
+          marginBottom: "30px"
+        }}
+      >
+        <h2>Analyze New Log</h2>
+
+        <textarea
+          placeholder="Paste infrastructure log here..."
+          value={newLog}
+          onChange={(event) => setNewLog(event.target.value)}
+          rows="4"
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginBottom: "10px"
+          }}
+        />
+
+        <button onClick={analyzeNewLog} disabled={isAnalyzing}>
+          {isAnalyzing ? "Analyzing..." : "Analyze Log"}
+        </button>
+      </div>
 
       {metrics && (
         <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
